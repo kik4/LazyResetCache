@@ -12,12 +12,14 @@ namespace LazyResetCache.Tests
             Assert.False(cache.Exists("test"), "should be null");
         }
 
+#pragma warning disable 1998
         [Fact]
         public void ReturnsTrueWhenHasCache()
         {
             var cache = new LazyResetCache<string>(new TimeSpan(1, 0, 0));
-            cache.Set("hoge", () => "piyo");
+            cache.Set("hoge", async () => "piyo");
             Assert.True(cache.Exists("hoge"), "should have something");
         }
+#pragma warning restore 1998
     }
 }

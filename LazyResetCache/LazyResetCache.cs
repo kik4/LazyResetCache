@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.Caching;
+using System.Threading.Tasks;
 
 namespace LazyResetCache
 {
@@ -14,9 +15,9 @@ namespace LazyResetCache
             this._span = span;
         }
 
-        public void Set(string key, Func<T> setter)
+        public void Set(string key, Func<Task<T>> setter)
         {
-            this._cache[this.GetFullKey(key)] = setter();
+            this._cache[this.GetFullKey(key)] = setter().Result;
             this._cache[this.GetSetterKey(key)] = setter;
             this._cache[this.GetExpiredTimeKey(key)] = this.CulcExpiredTime();
         }
@@ -32,9 +33,13 @@ namespace LazyResetCache
             var expiredTime = (DateTime)this._cache[this.GetExpiredTimeKey(key)];
             if (DateTime.Compare(now, expiredTime) >= 0)
             {
-                var setter = (Func<T>)this._cache[this.GetSetterKey(key)];
-                this._cache[this.GetFullKey(key)] = setter();
-                this._cache[this.GetExpiredTimeKey(key)] = this.CulcExpiredTime();
+                Func<Task> f = async () =>
+                {
+                    var setter = (Func<Task<T>>)this._cache[this.GetSetterKey(key)];
+                    this._cache[this.GetFullKey(key)] = await setter();
+                    this._cache[this.GetExpiredTimeKey(key)] = this.CulcExpiredTime();
+                };
+                f();
             }
             return (T)this._cache[this.GetFullKey(key)];
         }
