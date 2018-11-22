@@ -9,7 +9,7 @@ namespace LazyResetCache.Tests
         public void Success()
         {
             var cache = new LazyResetCache<string>();
-            cache.Set("0", "hoge");
+            cache.Set("0", () => "hoge");
         }
     }
 }

@@ -16,7 +16,7 @@ namespace LazyResetCache.Tests
         public void ReturnsCachedValue()
         {
             var cache = new LazyResetCache<string>();
-            cache.Set("hoge", "piyo");
+            cache.Set("hoge", () => "piyo");
             Assert.Equal("piyo", cache.Get("hoge"));
         }
     }
