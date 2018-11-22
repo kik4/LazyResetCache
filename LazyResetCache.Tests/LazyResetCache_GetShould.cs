@@ -3,21 +3,21 @@ using Xunit;
 
 namespace LazyResetCache.Tests
 {
-    public class LazyResetCache_ExistsShould
+    public class LazyResetCache_GetShould
     {
         [Fact]
-        public void ReturnsFalseFirst()
+        public void ReturnsNull()
         {
             var cache = new LazyResetCache<string>();
-            Assert.False(cache.Exists("test"), "should be null");
+            Assert.Null(cache.Get("test"));
         }
 
         [Fact]
-        public void ReturnsTrueWhenHasCache()
+        public void ReturnsCachedValue()
         {
             var cache = new LazyResetCache<string>();
             cache.Set("hoge", "piyo");
-            Assert.True(cache.Exists("hoge"), "should have something");
+            Assert.Equal("piyo", cache.Get("hoge"));
         }
     }
 }

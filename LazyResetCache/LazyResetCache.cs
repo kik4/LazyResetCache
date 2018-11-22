@@ -8,6 +8,16 @@ namespace LazyResetCache
         static readonly string _seperator = "/";
         MemoryCache _cache = MemoryCache.Default;
 
+        public void Set(string key, T value)
+        {
+            this._cache[this.GetFullKey(key)] = value;
+        }
+
+        public T Get(string key)
+        {
+            return (T)this._cache[this.GetFullKey(key)];
+        }
+
         public bool Exists(string key)
         {
             return this._cache[this.GetFullKey(key)] != null;
