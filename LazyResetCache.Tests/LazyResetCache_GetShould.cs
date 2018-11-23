@@ -13,24 +13,22 @@ namespace LazyResetCache.Tests
             Assert.Null(cache.Get("test"));
         }
 
-#pragma warning disable 1998
         [Fact]
         public void ReturnsCachedValue()
         {
             var cache = new LazyResetCache<string>(new TimeSpan(1, 0, 0));
-            cache.Set("hoge", async () => "piyo");
+            cache.Set("hoge", () => "piyo");
             Assert.Equal("piyo", cache.Get("hoge"));
         }
-#pragma warning restore 1998
 
         [Fact]
         public async void Expires()
         {
             var cache = new LazyResetCache<int>((new TimeSpan(0, 0, 0, 0, 100)));
             var i = 0;
-            cache.Set("counter", async () =>
+            cache.Set("counter", () =>
             {
-                await Task.Delay(50);
+                Task.Delay(100).Wait();
                 return i;
             });
             Assert.Equal(0, cache.Get("counter"));
