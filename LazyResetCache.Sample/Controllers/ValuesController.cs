@@ -22,9 +22,16 @@ namespace LazyResetCache.Sample.Controllers
 
             if (!cached)
             {
-                cache.Set(key, () => DateTime.Now.ToString());
+                cache.Set(key, () =>
+                {
+                    Console.WriteLine("Start Set(): " + DateTime.Now.ToString());
+                    Task.Delay(1000).Wait();
+                    var time = DateTime.Now.ToString();
+                    Console.WriteLine("Complete Set()." + time);
+                    return time;
+                });
             }
-            return (cached ? "from " : "new ") + "lazy cache: " + cache.Get(key);
+            return $"{DateTime.Now.ToString()} requested\n{cache.Get(key)} {(cached ? "from" : "new")} lazy cache";
         }
     }
 }

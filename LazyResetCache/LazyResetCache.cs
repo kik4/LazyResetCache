@@ -33,11 +33,11 @@ namespace LazyResetCache
             var expiredTime = (DateTime)this._cache[this.GetExpiredTimeKey(key)];
             if (DateTime.Compare(now, expiredTime) >= 0)
             {
+                this._cache[this.GetExpiredTimeKey(key)] = this.CulcExpiredTime();
                 Func<Task> resetter = async () =>
                 {
                     var setter = (Func<T>)this._cache[this.GetSetterKey(key)];
                     this._cache[this.GetFullKey(key)] = await Task.Run(() => setter());
-                    this._cache[this.GetExpiredTimeKey(key)] = this.CulcExpiredTime();
                 };
                 resetter();
             }
