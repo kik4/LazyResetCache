@@ -9,6 +9,7 @@ namespace LazyResetCache
         static readonly string _seperator = "/";
         MemoryCache _cache = MemoryCache.Default;
         TimeSpan _span;
+        object _lock = new object();
 
         public LazyResetCache(TimeSpan span)
         {
@@ -33,13 +34,16 @@ namespace LazyResetCache
             var expiredTime = (DateTime)this._cache[this.GetExpiredTimeKey(key)];
             if (DateTime.Compare(now, expiredTime) >= 0)
             {
-                this._cache[this.GetExpiredTimeKey(key)] = this.CulcExpiredTime();
-                Func<Task> resetter = async () =>
+                lock (this._lock)
                 {
-                    var setter = (Func<T>)this._cache[this.GetSetterKey(key)];
-                    this._cache[this.GetFullKey(key)] = await Task.Run(() => setter());
-                };
-                resetter();
+                    this._cache[this.GetExpiredTimeKey(key)] = this.CulcExpiredTime();
+                    Func<Task> resetter = async () =>
+                    {
+                        var setter = (Func<T>)this._cache[this.GetSetterKey(key)];
+                        this._cache[this.GetFullKey(key)] = await Task.Run(() => setter());
+                    };
+                    resetter();
+                }
             }
             return (T)this._cache[this.GetFullKey(key)];
         }
