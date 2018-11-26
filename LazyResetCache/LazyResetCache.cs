@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.Caching;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LazyResetCache
@@ -18,9 +19,19 @@ namespace LazyResetCache
 
         public void Set(string key, Func<T> setter)
         {
-            this._cache[this.GetFullKey(key)] = setter();
-            this._cache[this.GetSetterKey(key)] = setter;
-            this._cache[this.GetExpiredTimeKey(key)] = this.CulcExpiredTime();
+            if (Monitor.TryEnter(this._lock))
+            {
+                try
+                {
+                    this._cache[this.GetFullKey(key)] = setter();
+                    this._cache[this.GetSetterKey(key)] = setter;
+                    this._cache[this.GetExpiredTimeKey(key)] = this.CulcExpiredTime();
+                }
+                finally
+                {
+                    Monitor.Exit(this._lock);
+                }
+            }
         }
 
         public T Get(string key)
@@ -34,15 +45,22 @@ namespace LazyResetCache
             var expiredTime = (DateTime)this._cache[this.GetExpiredTimeKey(key)];
             if (DateTime.Compare(now, expiredTime) >= 0)
             {
-                lock (this._lock)
+                if (Monitor.TryEnter(this._lock))
                 {
-                    this._cache[this.GetExpiredTimeKey(key)] = this.CulcExpiredTime();
-                    Func<Task> resetter = async () =>
+                    try
                     {
-                        var setter = (Func<T>)this._cache[this.GetSetterKey(key)];
-                        this._cache[this.GetFullKey(key)] = await Task.Run(() => setter());
-                    };
-                    resetter();
+                        this._cache[this.GetExpiredTimeKey(key)] = this.CulcExpiredTime();
+                        Func<Task> resetter = async () =>
+                        {
+                            var setter = (Func<T>)this._cache[this.GetSetterKey(key)];
+                            this._cache[this.GetFullKey(key)] = await Task.Run(() => setter());
+                        };
+                        resetter();
+                    }
+                    finally
+                    {
+                        Monitor.Exit(this._lock);
+                    }
                 }
             }
             return (T)this._cache[this.GetFullKey(key)];
