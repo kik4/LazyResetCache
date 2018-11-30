@@ -3,13 +3,13 @@ using Xunit;
 
 namespace LazyResetCache.Tests
 {
-    public class LazyResetCache_SetShould
+    public class LazyResetCache_InitShould
     {
         [Fact]
         public void Success()
         {
             var cache = new LazyResetCache<string>(new TimeSpan(1, 0, 0));
-            cache.Set("0", () => "hoge");
+            cache.Init("0", () => "hoge");
         }
     }
 }

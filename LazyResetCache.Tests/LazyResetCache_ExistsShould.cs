@@ -16,7 +16,7 @@ namespace LazyResetCache.Tests
         public void ReturnsTrueWhenHasCache()
         {
             var cache = new LazyResetCache<string>(new TimeSpan(1, 0, 0));
-            cache.Set("hoge", () => "piyo");
+            cache.Init("hoge", () => "piyo");
             Assert.True(cache.Exists("hoge"), "should have something");
         }
     }

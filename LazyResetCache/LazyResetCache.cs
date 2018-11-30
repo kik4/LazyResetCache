@@ -17,7 +17,7 @@ namespace LazyResetCache
             this._span = span;
         }
 
-        public void Set(string key, Func<T> setter)
+        public void Init(string key, Func<T> setter)
         {
             if (Monitor.TryEnter(this._lock))
             {

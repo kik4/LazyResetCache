@@ -17,7 +17,7 @@ namespace LazyResetCache.Tests
         public void ReturnsCachedValue()
         {
             var cache = new LazyResetCache<string>(new TimeSpan(1, 0, 0));
-            cache.Set("hoge", () => "piyo");
+            cache.Init("hoge", () => "piyo");
             Assert.Equal("piyo", cache.Get("hoge"));
         }
 
@@ -26,7 +26,7 @@ namespace LazyResetCache.Tests
         {
             var cache = new LazyResetCache<int>((new TimeSpan(0, 0, 0, 0, 100)));
             var i = 0;
-            cache.Set("counter", () =>
+            cache.Init("counter", () =>
             {
                 Task.Delay(100).Wait();
                 return i;

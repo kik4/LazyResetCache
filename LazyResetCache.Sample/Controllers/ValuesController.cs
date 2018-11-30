@@ -22,7 +22,7 @@ namespace LazyResetCache.Sample.Controllers
 
             if (!cached)
             {
-                cache.Set(key, () =>
+                cache.Init(key, () =>
                 {
                     Console.WriteLine("Start Set(): " + DateTime.Now.ToString());
                     Task.Delay(1000).Wait();
