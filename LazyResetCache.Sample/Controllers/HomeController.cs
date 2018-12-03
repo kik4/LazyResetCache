@@ -1,21 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using LazyResetCache.Sample.Models;
 using LazyResetCache;
 
 namespace LazyResetCache.Sample.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ValuesController : ControllerBase
+    public class HomeController : Controller
     {
         static LazyResetCache<string> cache = new LazyResetCache<string>(new TimeSpan(0, 0, 3));
 
-        // GET api/values
-        [HttpGet]
-        public ActionResult<string> Get()
+        public IActionResult Index()
         {
             var key = "hoge";
             var cached = cache.Exists(key);
@@ -31,7 +29,18 @@ namespace LazyResetCache.Sample.Controllers
                     return time;
                 });
             }
-            return $"{DateTime.Now.ToString()} requested\n{cache.Get(key)} {(cached ? "from" : "new")} lazy cache";
+
+            ViewData["Requested"] = DateTime.Now.ToString();
+            ViewData["Cached"] = cache.Get(key).ToString();
+            ViewData["IsCached"] = cached;
+
+            return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
     }
 }

@@ -1,0 +1,8 @@
+﻿@{
+    ViewData["Title"] = "Sample";
+}
+
+<div>
+    @(ViewData["Requested"]) requested<br />
+    @(ViewData["Cached"]) responsed from @((bool)ViewData["IsCached"] ? "" : "new") lazy cache
+</div>
