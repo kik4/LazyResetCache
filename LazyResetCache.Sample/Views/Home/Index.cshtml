@@ -3,6 +3,21 @@
 }
 
 <div>
-    @(ViewData["Requested"]) requested<br />
-    @(ViewData["Cached"]) responsed from @((bool)ViewData["IsCached"] ? "" : "new") lazy cache
+    <div id="date"></div>
+    <div>@(ViewData["Requested"]) requested</div>
+    <div>@(ViewData["Cached"]) cached @((bool)ViewData["IsCached"] ? "from" : "new") lazy cache</div>
+    <script>
+        function date() {
+            var now = new Date();
+            var year = now.getFullYear();
+            var month = ('0' + (now.getMonth() + 1)).slice(-2);
+            var day = ('0' + now.getDay()).slice(-2);
+            var hours = ('0' + now.getHours()).slice(-2);
+            var minutes = ('0' + now.getMinutes()).slice(-2);
+            var seconds = ('0' + now.getSeconds()).slice(-2);
+            document.getElementById('date').textContent = `${year}/${month}/${day} ${hours}:${minutes}:${seconds} now`;
+        }
+        date();
+        setInterval(date, 500);
+    </script>
 </div>
