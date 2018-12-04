@@ -23,9 +23,8 @@ namespace LazyResetCache
             {
                 try
                 {
-                    this._cache[this.GetFullKey(key)] = setter();
-                    this._cache[this.GetSetterKey(key)] = setter;
-                    this._cache[this.GetExpiredTimeKey(key)] = this.CulcExpiredTime();
+                    var item = new CacheItem<T> { value = setter(), setter = setter, expiredTime = this.CulcExpiredTime() };
+                    this._Set(key, item);
                 }
                 finally
                 {
@@ -42,18 +41,18 @@ namespace LazyResetCache
             }
 
             var now = DateTime.Now;
-            var expiredTime = (DateTime)this._cache[this.GetExpiredTimeKey(key)];
+            var expiredTime = (DateTime)this._Get(key).expiredTime;
             if (DateTime.Compare(now, expiredTime) >= 0)
             {
                 if (Monitor.TryEnter(this._lock))
                 {
                     try
                     {
-                        this._cache[this.GetExpiredTimeKey(key)] = this.CulcExpiredTime();
+                        this._Get(key).expiredTime = this.CulcExpiredTime();
                         Func<Task> resetter = async () =>
                         {
-                            var setter = (Func<T>)this._cache[this.GetSetterKey(key)];
-                            this._cache[this.GetFullKey(key)] = await Task.Run(() => setter());
+                            var setter = this._Get(key).setter;
+                            this._Get(key).value = await Task.Run(() => setter());
                         };
                         resetter();
                     }
@@ -63,12 +62,12 @@ namespace LazyResetCache
                     }
                 }
             }
-            return (T)this._cache[this.GetFullKey(key)];
+            return this._Get(key).value;
         }
 
         public bool Exists(string key)
         {
-            return this._cache[this.GetFullKey(key)] != null;
+            return this._Get(key) != null;
         }
 
         private string GetFullKey(string key)
@@ -76,19 +75,26 @@ namespace LazyResetCache
             return this.GetHashCode() + _seperator + typeof(T).FullName + _seperator + key;
         }
 
-        private string GetExpiredTimeKey(string key)
-        {
-            return this.GetFullKey(key) + _seperator + "ExpiredTime";
-        }
-
-        private string GetSetterKey(string key)
-        {
-            return this.GetFullKey(key) + _seperator + "Setter";
-        }
-
         private DateTime CulcExpiredTime()
         {
             return DateTime.Now + this._span;
         }
+
+        private void _Set(string key, CacheItem<T> item)
+        {
+            this._cache[this.GetFullKey(key)] = item;
+        }
+
+        private CacheItem<T> _Get(string key)
+        {
+            return (CacheItem<T>)this._cache[this.GetFullKey(key)];
+        }
+    }
+
+    class CacheItem<T>
+    {
+        public Func<T> setter;
+        public T value;
+        public DateTime expiredTime;
     }
 }

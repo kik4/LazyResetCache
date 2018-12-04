@@ -31,7 +31,7 @@ namespace LazyResetCache.Sample.Controllers
             }
 
             ViewData["Requested"] = DateTime.Now.ToString();
-            ViewData["Cached"] = cache.Get(key).ToString();
+            ViewData["Cached"] = cache.Get(key);
             ViewData["IsCached"] = cached;
 
             return View();
