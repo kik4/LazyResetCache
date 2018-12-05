@@ -9,15 +9,15 @@ namespace LazyResetCache.Tests
         public void ReturnsFalseFirst()
         {
             var cache = new LazyResetCache<string>(new TimeSpan(1, 0, 0));
-            Assert.False(cache.Exists("test"), "should be null");
+            Assert.False(cache.Exists(), "should be null");
         }
 
         [Fact]
         public void ReturnsTrueWhenHasCache()
         {
             var cache = new LazyResetCache<string>(new TimeSpan(1, 0, 0));
-            cache.Init("hoge", () => "piyo");
-            Assert.True(cache.Exists("hoge"), "should have something");
+            cache.Init(() => "piyo");
+            Assert.True(cache.Exists(), "should have something");
         }
     }
 }

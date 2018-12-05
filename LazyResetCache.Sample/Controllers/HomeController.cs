@@ -15,12 +15,11 @@ namespace LazyResetCache.Sample.Controllers
 
         public IActionResult Index()
         {
-            var key = "hoge";
-            var cached = cache.Exists(key);
+            var cached = cache.Exists();
 
             if (!cached)
             {
-                cache.Init(key, () =>
+                cache.Init(() =>
                 {
                     Console.WriteLine("Start Set(): " + DateTime.Now.ToString());
                     Task.Delay(1000).Wait();
@@ -31,7 +30,7 @@ namespace LazyResetCache.Sample.Controllers
             }
 
             ViewData["Requested"] = DateTime.Now.ToString();
-            ViewData["Cached"] = cache.Get(key);
+            ViewData["Cached"] = cache.Get();
             ViewData["IsCached"] = cached;
 
             return View();

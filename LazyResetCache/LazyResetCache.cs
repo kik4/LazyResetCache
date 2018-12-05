@@ -8,7 +8,7 @@ namespace LazyResetCache
     public class LazyResetCache<T>
     {
         static readonly string _seperator = "/";
-        MemoryCache _cache = MemoryCache.Default;
+        static MemoryCache _cache = MemoryCache.Default;
         TimeSpan _span;
         object _lock = new object();
 
@@ -17,14 +17,14 @@ namespace LazyResetCache
             this._span = span;
         }
 
-        public void Init(string key, Func<T> setter)
+        public void Init(Func<T> setter)
         {
             if (Monitor.TryEnter(this._lock))
             {
                 try
                 {
                     var item = new CacheItem<T> { value = setter(), setter = setter, expiredTime = this.CulcExpiredTime() };
-                    this._Set(key, item);
+                    this._Set(item);
                 }
                 finally
                 {
@@ -33,26 +33,26 @@ namespace LazyResetCache
             }
         }
 
-        public T Get(string key)
+        public T Get()
         {
-            if (!this.Exists(key))
+            if (!this.Exists())
             {
                 return default(T);
             }
 
             var now = DateTime.Now;
-            var expiredTime = (DateTime)this._Get(key).expiredTime;
+            var expiredTime = (DateTime)this._Get().expiredTime;
             if (DateTime.Compare(now, expiredTime) >= 0)
             {
                 if (Monitor.TryEnter(this._lock))
                 {
                     try
                     {
-                        this._Get(key).expiredTime = this.CulcExpiredTime();
+                        this._Get().expiredTime = this.CulcExpiredTime();
                         Func<Task> resetter = async () =>
                         {
-                            var setter = this._Get(key).setter;
-                            this._Get(key).value = await Task.Run(() => setter());
+                            var setter = this._Get().setter;
+                            this._Get().value = await Task.Run(() => setter());
                         };
                         resetter();
                     }
@@ -62,17 +62,17 @@ namespace LazyResetCache
                     }
                 }
             }
-            return this._Get(key).value;
+            return this._Get().value;
         }
 
-        public bool Exists(string key)
+        public bool Exists()
         {
-            return this._Get(key) != null;
+            return this._Get() != null;
         }
 
-        private string GetFullKey(string key)
+        private string GetFullKey()
         {
-            return this.GetHashCode() + _seperator + typeof(T).FullName + _seperator + key;
+            return this.GetHashCode() + _seperator + typeof(T).FullName + _seperator + this.GetHashCode();
         }
 
         private DateTime CulcExpiredTime()
@@ -80,14 +80,14 @@ namespace LazyResetCache
             return DateTime.Now + this._span;
         }
 
-        private void _Set(string key, CacheItem<T> item)
+        private void _Set(CacheItem<T> item)
         {
-            this._cache[this.GetFullKey(key)] = item;
+            _cache[this.GetFullKey()] = item;
         }
 
-        private CacheItem<T> _Get(string key)
+        private CacheItem<T> _Get()
         {
-            return (CacheItem<T>)this._cache[this.GetFullKey(key)];
+            return (CacheItem<T>)_cache[this.GetFullKey()];
         }
     }
 
