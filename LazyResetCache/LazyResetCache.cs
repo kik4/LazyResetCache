@@ -9,92 +9,53 @@ namespace LazyResetCache
     {
         static readonly string _seperator = "/";
         static MemoryCache _cache = MemoryCache.Default;
-        TimeSpan _span;
-        object _lock = new object();
 
-        public LazyResetCache(TimeSpan span)
+        public LazyResetCache(TimeSpan span, Func<T> setter)
         {
-            this._span = span;
+            var policy = CacheItemPolicy(span, setter);
+            var value = setter();
+            _cache.Set(GetFullKey(), value, policy);
         }
 
-        public void Init(Func<T> setter)
+        private CacheItemPolicy CacheItemPolicy(TimeSpan span, Func<T> setter)
         {
-            if (Monitor.TryEnter(this._lock))
+            Console.WriteLine(DateTimeOffset.Now.Add(span));
+            return new CacheItemPolicy
             {
-                try
-                {
-                    var item = new CacheItem<T> { value = setter(), setter = setter, expiredTime = this.CulcExpiredTime() };
-                    this._Set(item);
-                }
-                finally
-                {
-                    Monitor.Exit(this._lock);
-                }
-            }
+                // AbsoluteExpiration = DateTimeOffset.Now.Add(span),
+                SlidingExpiration = span,
+                UpdateCallback = (args) => UpdateCallback(args, span, setter),
+                // RemovedCallback = (args) => Console.WriteLine("Removed: " + DateTime.Now.ToString()),
+            };
+        }
+
+        private void UpdateCallback(CacheEntryUpdateArguments args, TimeSpan span, Func<T> setter)
+        {
+            Console.WriteLine("First Step: " + DateTime.Now.ToString());
+
+            args.UpdatedCacheItem = args.Source.GetCacheItem(GetFullKey());
+            args.UpdatedCacheItemPolicy = new CacheItemPolicy();
+
+            Func<Task> resetter = async () =>
+            {
+                Console.WriteLine("Second Step");
+                var value = await Task.Run(() => setter());
+                var policy = CacheItemPolicy(span, setter);
+                _cache.Set(new CacheItem(GetFullKey(), value), policy);
+                Console.WriteLine("Third Step");
+            };
+            resetter();
         }
 
         public T Get()
         {
-            if (!this.Exists())
-            {
-                return default(T);
-            }
-
-            var now = DateTime.Now;
-            var expiredTime = (DateTime)this._Get().expiredTime;
-            if (DateTime.Compare(now, expiredTime) >= 0)
-            {
-                if (Monitor.TryEnter(this._lock))
-                {
-                    try
-                    {
-                        this._Get().expiredTime = this.CulcExpiredTime();
-                        Func<Task> resetter = async () =>
-                        {
-                            var setter = this._Get().setter;
-                            this._Get().value = await Task.Run(() => setter());
-                        };
-                        resetter();
-                    }
-                    finally
-                    {
-                        Monitor.Exit(this._lock);
-                    }
-                }
-            }
-            return this._Get().value;
-        }
-
-        public bool Exists()
-        {
-            return this._Get() != null;
+            var value = _cache.Get(GetFullKey());
+            return (T)value;
         }
 
         private string GetFullKey()
         {
             return this.GetHashCode() + _seperator + typeof(T).FullName + _seperator + this.GetHashCode();
         }
-
-        private DateTime CulcExpiredTime()
-        {
-            return DateTime.Now + this._span;
-        }
-
-        private void _Set(CacheItem<T> item)
-        {
-            _cache[this.GetFullKey()] = item;
-        }
-
-        private CacheItem<T> _Get()
-        {
-            return (CacheItem<T>)_cache[this.GetFullKey()];
-        }
-    }
-
-    class CacheItem<T>
-    {
-        public Func<T> setter;
-        public T value;
-        public DateTime expiredTime;
     }
 }
